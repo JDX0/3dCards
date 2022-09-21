@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 import { FontLoader } from "three/src/loaders/FontLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { Vector3 } from "three";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -21,7 +22,6 @@ function moveCamera() {
 }
 document.body.onscroll = moveCamera;
 moveCamera();
-
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -80,25 +80,26 @@ const onClick = (event) => {
   if (intersects.length > 0) {
     intersects[0].object.material.color.set(0x333333);
   }
-  document.getElementById('cards').style.visibility='hidden';
+  document.getElementById("cards").style.visibility = "hidden";
 };
 window.addEventListener("mousemove", onMouseMove);
 window.addEventListener("click", onClick);
 
-const bgTexture = new THREE.TextureLoader().load("bg.png");
-scene.background = bgTexture;
+//const bgTexture = new THREE.TextureLoader().load("bg.png");
+//scene.background = bgTexture;
 scene.background = new THREE.Color(0x000000);
 
 const gltfloader = new GLTFLoader().setPath("");
 var monster;
 gltfloader.load("monster.gltf", function (gltf) {
   gltf.scene.traverse(function (child) {
-    gltf.scene.getObjectByName("Sphere").name = '123';
+    gltf.scene.getObjectByName("Sphere").name = "123";
     scene.add(gltf.scene.getObjectByName("123"));
   });
 });
 
-const loader = new FontLoader();
+const fnLoader = new FontLoader();
+
 /*loader.load("fonts/Inter Medium_Regular.json", function (font) {
   const color = 0x00ddff;
 
@@ -172,16 +173,38 @@ const loader = new FontLoader();
 });*/
 
 function loadCards() {
-  loader.load("fonts/Inter Medium_Regular.json", function (font) {
+  fnLoader.load("fonts/Inter Medium_Regular.json", function (font) {
     const color = 0xffffff;
+    const distance = -7;
     var schools = document.getElementsByClassName("text-gradient");
+    var logos = document.getElementsByClassName("skola-img");
     for (var index = 0; index < schools.length; index++) {
       const Cgeometry = new THREE.BoxGeometry(20, 2, 1);
       const Cmaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
       const mesh = new THREE.Mesh(Cgeometry, Cmaterial);
-      mesh.position.y = index * -3;
+      mesh.position.y = index * distance;
       mesh.position.z = -0.6;
       scene.add(mesh);
+      //const logoTexture = new THREE.TextureLoader().load("static/images/logos/oazlin.jpg");
+      const txLoader = new THREE.TextureLoader();
+      var i = 0
+      txLoader.load(logos[index].src, function (tx) {
+        const width = tx.image.width / 100;
+        const height = tx.image.height / 100;
+        const logoGeometry = new THREE.PlaneGeometry(width,height);
+        console.log(width, height);
+        logoGeometry.translate(0, 3.5, 0);
+        const logoMaterial = new THREE.MeshBasicMaterial({
+          map: tx,
+        });
+        const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+        logoMesh.position.y = i * distance;
+        logoMesh.position.z = -0.6;
+        console.log(logoMesh.position);
+        scene.add(logoMesh);
+        i += 1;
+      });
+
       const messageCard = schools[index].innerText;
       const matDark = new THREE.LineBasicMaterial({
         color: color,
@@ -203,7 +226,7 @@ function loadCards() {
       const xMid =
         -0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
 
-      geometry.translate(xMid, index * -3, 0);
+      geometry.translate(xMid, index * distance, 0);
 
       // make shape ( N.B. edge view not visible )
 
@@ -236,7 +259,7 @@ function loadCards() {
         const points = shape.getPoints();
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-        geometry.translate(xMid, index * -3, -0.025);
+        geometry.translate(xMid, index * distance, -0.025);
 
         const lineMesh = new THREE.Line(geometry, matDark);
         lineText.add(lineMesh);
@@ -248,7 +271,6 @@ function loadCards() {
 }
 loadCards();
 
-
 window.addEventListener("resize", onWindowResize);
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -259,7 +281,6 @@ function onWindowResize() {
 
 function animate() {
   //scene.getObjectByName('123').rotation.x += 0.1;
-  scene.get
   requestAnimationFrame(animate);
   //controls.update();
   renderer.render(scene, camera);
