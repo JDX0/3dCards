@@ -1,10 +1,10 @@
 import "./style.css";
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+//import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { FontLoader } from "three/src/loaders/FontLoader.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { Vector3 } from "three";
+//import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -29,6 +29,9 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.render(scene, camera);
 
 /*document.body.appendChild(renderer.domElement);
@@ -40,12 +43,20 @@ controls.minDistance = 100;
 controls.maxDistance = 500;
 controls.maxPolarAngle = Math.PI / 2;*/
 
-const pointLight = new THREE.PointLight(0xffffff);
+/*const pointLight = new THREE.PointLight(0xffffff);
 pointLight.position.set(5, 5, 5);
 const ambientLight = new THREE.AmbientLight(0x223344);
-scene.add(pointLight, ambientLight);
+scene.add(pointLight, ambientLight);*/
 
-function addStar() {
+new RGBELoader()
+  .setPath("static/images/backgrounds/")
+  .load("1k.hdr", function (texture) {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+
+    scene.background = texture;
+    scene.environment = texture;
+  });
+/*function addStar() {
   const geometry = new THREE.SphereGeometry(0.05, 8, 8);
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
   const star = new THREE.Mesh(geometry, material);
@@ -58,7 +69,7 @@ function addStar() {
   scene.add(star);
 }
 Array(2000).fill().forEach(addStar);
-
+*/
 const pointer = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const onMouseMove = (event) => {
@@ -66,9 +77,10 @@ const onMouseMove = (event) => {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(scene.children);
+  const intersects = raycaster.intersectObjects(scene.children, true);
   if (intersects.length > 0) {
     intersects[0].object.material.color.set(0xff0000);
+    intersects[0].object.rotation.y += 0.025;
   }
 };
 const onClick = (event) => {
@@ -79,6 +91,7 @@ const onClick = (event) => {
   const intersects = raycaster.intersectObjects(scene.children);
   if (intersects.length > 0) {
     intersects[0].object.material.color.set(0x333333);
+    console.log(intersects[0].object.name);
   }
   document.getElementById("cards").style.visibility = "hidden";
 };
@@ -89,12 +102,16 @@ window.addEventListener("click", onClick);
 //scene.background = bgTexture;
 scene.background = new THREE.Color(0x000000);
 
-const gltfloader = new GLTFLoader().setPath("");
-var monster;
-gltfloader.load("monster.gltf", function (gltf) {
+const gltfloader = new GLTFLoader().setPath("static/models/");
+/*gltfloader.load("monster.gltf", function (gltf) {
   gltf.scene.traverse(function (child) {
     gltf.scene.getObjectByName("Sphere").name = "123";
     scene.add(gltf.scene.getObjectByName("123"));
+  });
+});*/
+gltfloader.load("javaSphere.glb", function (gltf) {
+  gltf.scene.traverse(function (child) {
+    scene.add(gltf.scene.getObjectByName("Sphere"));
   });
 });
 
@@ -173,39 +190,63 @@ const fnLoader = new FontLoader();
 });*/
 
 function loadCards() {
+  var schools = document.getElementsByClassName("text-gradient");
+  var logos = document.getElementsByClassName("skola-img");
+  const color = 0xffffff;
+  const distance = -7;
+  var b = 0;
+  for (var a = 0; a < schools.length; a++) {
+    gltfloader.load("Card.glb", function (gltf) {
+      gltf.scene.scale.set(2, 1.5, 1.5);
+      gltf.scene.position.set(0, b * distance + 1.5, -0.6);
+      console.log(b);
+      scene.add(gltf.scene);
+      b++;
+    });
+  }
   fnLoader.load("fonts/Inter Medium_Regular.json", function (font) {
-    const color = 0xffffff;
-    const distance = -7;
-    var schools = document.getElementsByClassName("text-gradient");
-    var logos = document.getElementsByClassName("skola-img");
     for (var index = 0; index < schools.length; index++) {
-      const Cgeometry = new THREE.BoxGeometry(20, 2, 1);
-      const Cmaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-      const mesh = new THREE.Mesh(Cgeometry, Cmaterial);
-      mesh.position.y = index * distance;
-      mesh.position.z = -0.6;
-      scene.add(mesh);
+      //const Cgeometry = new THREE.BoxGeometry(20, 2, 1);
+      //const Cmaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+      //const mesh = new THREE.Mesh(Cgeometry, Cmaterial);
+      //mesh.position.y = index * distance;
+      //mesh.position.z = -0.6;
+      //scene.add(mesh);
       //const logoTexture = new THREE.TextureLoader().load("static/images/logos/oazlin.jpg");
       const txLoader = new THREE.TextureLoader();
-      var i = 0
+      var i = 0;
       txLoader.load(logos[index].src, function (tx) {
-        const width = tx.image.width / 100;
-        const height = tx.image.height / 100;
-        const logoGeometry = new THREE.PlaneGeometry(width,height);
-        console.log(width, height);
-        logoGeometry.translate(0, 3.5, 0);
+        const width = (tx.image.width / tx.image.height) * 3;
+        const height = 3;
+        const logoGeometry = new THREE.PlaneGeometry(width, height);
+        logoGeometry.translate(0, 2.5, 0.5);
         const logoMaterial = new THREE.MeshBasicMaterial({
           map: tx,
+          transparent: true,
         });
         const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
         logoMesh.position.y = i * distance;
         logoMesh.position.z = -0.6;
-        console.log(logoMesh.position);
         scene.add(logoMesh);
+
         i += 1;
       });
-
-      const messageCard = schools[index].innerText;
+      const lineLength = 32;
+      var t = schools[index].innerText
+      t = t.split(' ');
+      var count = 0;
+      var tCard = t[0];
+      for(var v = 1; v<t.length; v++) {
+        count += t[v].length
+        if(count > lineLength) {
+          count = t[v].length;
+          tCard = tCard + '\n' + t[v];
+        } else {
+          tCard = tCard + ' ' + t[v];
+        }
+      }
+      const messageCard = tCard;
+      tCard = '';
       const matDark = new THREE.LineBasicMaterial({
         color: color,
         side: THREE.DoubleSide,
@@ -235,7 +276,7 @@ function loadCards() {
       scene.add(text);
 
       // make line shape ( N.B. edge view remains visible )
-
+/*
       const holeShapes = [];
 
       for (let i = 0; i < shapes.length; i++) {
@@ -265,7 +306,7 @@ function loadCards() {
         lineText.add(lineMesh);
       }
 
-      scene.add(lineText);
+      scene.add(lineText);*/
     }
   });
 }
@@ -281,6 +322,9 @@ function onWindowResize() {
 
 function animate() {
   //scene.getObjectByName('123').rotation.x += 0.1;
+  try{
+    scene.getObjectByName('Sphere').rotateY(0.02);
+  } catch(err) {}
   requestAnimationFrame(animate);
   //controls.update();
   renderer.render(scene, camera);
